@@ -97,6 +97,22 @@ def post_list(request):
     posts = Post.objects.all().order_by('-created_at')
     return render(request, 'newapp/post_list.html', {'posts': posts})
 
+@login_required
+def post_create(request):
+    if not request.user.is_superuser:
+        messages.info(request, "You can create your own post.")
+    if request.method == 'POST':
+        form = PostForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.save()
+            messages.success(request, "Post created successfully!")
+            return redirect('newapp:post_detail', pk=post.pk)
+    else:
+        form = PostForm()
+    return render(request, 'newapp/post_form.html', {'form': form})
+
 
 @login_required
 def post_detail(request, pk):
@@ -120,24 +136,6 @@ def post_detail(request, pk):
         'comments': comments,
         'comment_form': comment_form
     })
-
-
-@login_required
-def post_create(request):
-    if not request.user.is_superuser:
-        messages.info(request, "You can create your own post.")
-    if request.method == 'POST':
-        form = PostForm(request.POST)
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            messages.success(request, "Post created successfully!")
-            return redirect('newapp:post_detail', pk=post.pk)
-    else:
-        form = PostForm()
-    return render(request, 'newapp/post_form.html', {'form': form})
-
 
 @login_required
 def post_edit(request, pk):
