@@ -1,0 +1,101 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>All Blog Posts</title>
+    <style>
+        body {
+            font-family: "Poppins", sans-serif;
+            background: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #4a90e2;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header a {
+            color: white;
+            text-decoration: none;
+            margin-left: 15px;
+            font-weight: bold;
+        }
+        .container {
+            padding: 30px;
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-top: 40px;
+        }
+        .btn {
+            background: #4a90e2;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background: #357ab7;
+        }
+        h2 {
+            text-align: center;
+        }
+        .post {
+            border-bottom: 1px solid #ddd;
+            padding: 15px 0;
+        }
+        .actions a {
+            margin-right: 10px;
+            color: #4a90e2;
+            text-decoration: none;
+        }
+        .actions a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div>
+        <a href="{% url 'newapp:post_list' %}">🏠 Home</a>
+        {% if request.user.is_authenticated %}
+            <a href="{% url 'newapp:post_create' %}">✍️ New Post</a>
+        {% endif %}
+    </div>
+    <div>
+        {% if request.user.is_authenticated %}
+            👤 {{ request.user.username }} |
+            <a href="{% url 'newapp:logout' %}">Logout</a>
+        {% else %}
+            <a href="{% url 'newapp:login' %}">Login</a> |
+            <a href="{% url 'newapp:register' %}">Register</a>
+        {% endif %}
+    </div>
+</header>
+
+<div class="container">
+    <h2>All Posts</h2>
+    {% for post in posts %}
+        <div class="post">
+            <h3><a href="{% url 'newapp:post_detail' post.pk %}">{{ post.title }}</a></h3>
+            <p>By <strong>{{ post.author.username }}</strong> on {{ post.created_at|date:"Y-m-d H:i" }}</p>
+            <div class="actions">
+                {% if request.user.is_superuser or request.user == post.author %}
+                    <a href="{% url 'newapp:post_edit' post.pk %}">Edit</a>
+                    <a href="{% url 'newapp:post_delete' post.pk %}" onclick="return confirm('Are you sure?')">Delete</a>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <p>No posts available.</p>
+    {% endfor %}
+</div>
+</body>
+</html>

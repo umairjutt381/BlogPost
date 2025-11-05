@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ post.title }}</title>
+    <style>
+        body {
+            font-family: "Poppins", sans-serif;
+            background: #f4f4f9;
+            margin: 0;
+        }
+        .container {
+            padding: 30px;
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            border-radius: 10px;
+            margin-top: 40px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; }
+        .meta { color: gray; margin-bottom: 15px; }
+        .btn { background: #4a90e2; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; }
+        .btn:hover { background: #357ab7; }
+        .comment-box { margin-top: 30px; }
+        .comment { border-bottom: 1px solid #eee; padding: 10px 0; }
+        .actions a { margin-right: 10px; text-decoration: none; color: #4a90e2; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>{{ post.title }}</h2>
+    <p class="meta">By <strong>{{ post.author.username }}</strong> on {{ post.created_at|date:"Y-m-d H:i" }}</p>
+    <p>{{ post.content }}</p>
+
+    <div class="actions">
+        <a href="{% url 'newapp:post_list' %}">⬅️ Back</a>
+        {% if request.user.is_superuser or request.user == post.author %}
+            <a href="{% url 'newapp:post_edit' post.pk %}">Edit</a>
+            <a href="{% url 'newapp:post_delete' post.pk %}">Delete</a>
+        {% endif %}
+    </div>
+
+    <div class="comment-box">
+        <h3>Comments</h3>
+        {% for comment in comments %}
+            <div class="comment">
+                <strong>{{ comment.author.username }}</strong>: {{ comment.text }}
+            </div>
+        {% empty %}
+            <p>No comments yet.</p>
+        {% endfor %}
+
+        {% if request.user.is_authenticated %}
+            <form method="post">
+                {% csrf_token %}
+                {{ comment_form.as_p }}
+                <button type="submit" class="btn">Add Comment</button>
+            </form>
+        {% else %}
+            <p><a href="{% url 'newapp:login' %}">Login</a> to add a comment.</p>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

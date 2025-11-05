@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | MyApp</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #4a90e2, #50c9c3);
+            min-height: 100vh;
+            padding: 40px;
+            color: #333;
+        }
+
+        .dashboard-container {
+            background: #fff;
+            border-radius: 15px;
+            padding: 40px 35px;
+            max-width: 950px;
+            margin: auto;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .header h2 {
+            color: #333;
+            font-size: 26px;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        h3 {
+            margin-bottom: 15px;
+            color: #4a90e2;
+            font-size: 22px;
+            border-bottom: 2px solid #4a90e2;
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #4a90e2;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        tr:hover {
+            background: #eef6ff;
+        }
+
+        td {
+            color: #333;
+        }
+
+        .action-link {
+            color: #4a90e2;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .action-link:hover {
+            text-decoration: underline;
+            color: #357ABD;
+        }
+
+        .no-users {
+            text-align: center;
+            color: #777;
+            font-style: italic;
+        }
+
+        @media (max-width: 700px) {
+            .dashboard-container {
+                padding: 25px 20px;
+            }
+
+            table, th, td {
+                font-size: 13px;
+            }
+
+            .header h2 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h2>Welcome, {{ request.user.username }}</h2>
+            <a href="{% url 'newapp:logout' %}" class="logout-btn">Logout</a>
+        </div>
+
+        <h3>Registered Users</h3>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Date Joined</th>
+                <th>Actions</th>
+            </tr>
+            {% for user_id, user_data in registered_users.items %}
+            <tr>
+                <td>{{ user_id }}</td>
+                <td>{{ user_data.username }}</td>
+                <td>{{ user_data.email }}</td>
+                <td>{{ user_data.date_joined }}</td>
+                <td>
+                    <a href="{% url 'newapp:update_user' user_id %}" class="action-link">Change Password</a> |
+                    <a href="{% url 'newapp:delete_user' user_id %}" class="action-link">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="no-users">No users found.</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        {% for msg in messages %}
+            <p style="color: green; margin-top: 10px;">{{ msg }}</p>
+        {% endfor %}
+    </div>
+</body>
+</html>
