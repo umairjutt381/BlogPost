@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, update_session_auth_hash, logout
 from django.contrib.auth.models import User
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Post
+from .models import Post, Comment
 from django.contrib.auth.decorators import login_required
 from .forms import PostForm, CommentForm
 
@@ -163,3 +163,14 @@ def post_delete(request, pk):
     else:
         messages.error(request, "You don’t have permission to delete this post.")
     return redirect('newapp:post_list')
+
+@login_required
+def delete_comments(request, pk):
+    comment = get_object_or_404(Comment, pk=pk)
+    if (request.user == comment.author or request.user == comment.post.author or
+            request.user.is_superuser):
+        comment.delete()
+        messages.success(request, "Comment deleted successfully!")
+    else:
+        messages.error(request, "You are not authorized to delete this comment")
+    return redirect('newapp:post_detail', pk=comment.post.pk)
