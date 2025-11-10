@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, update_session_auth_hash, logout
 from django.contrib.auth.models import User
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Post, Comment
+from .models import Post, Comment, Like
 from django.contrib.auth.decorators import login_required
 from .forms import PostForm, CommentForm
 
@@ -94,8 +94,12 @@ def delete_user(request, user_id):
     return redirect('show_context')
 
 def post_list(request):
-    posts = Post.objects.all().order_by('-created_at')
+    posts = Post.objects.filter(author=request.user).order_by('-created_at')
     return render(request, 'newapp/post_list.html', {'posts': posts})
+
+def show_all_list(request):
+    posts = Post.objects.all().order_by('-created_at')
+    return render(request, 'newapp/show_all_posts.html', {'posts': posts})
 
 @login_required
 def post_create(request):
@@ -117,25 +121,41 @@ def post_create(request):
 @login_required
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
-    comments = post.comments.all()
+    session_key = f'viewed_post_{post.pk}'
+    if not request.session.get(session_key, False):
+        post.views += 1
+        post.save(update_fields=['views'])
+        request.session[session_key] = True
+    comments = post.comments.filter(parent__isnull=True).order_by('-created_at')
+    user_liked = post.likes.filter(user=request.user).exists()
 
     if request.method == 'POST':
         comment_form = CommentForm(request.POST)
+        parent_id = request.POST.get('parent_id')
         if comment_form.is_valid():
             comment = comment_form.save(commit=False)
             comment.post = post
             comment.author = request.user
+            if parent_id:
+                parent_comment = Comment.objects.get(id=parent_id)
+                comment.parent = parent_comment
             comment.save()
             messages.success(request, "Comment added successfully!")
             return redirect('newapp:post_detail', pk=post.pk)
     else:
         comment_form = CommentForm()
+    for comment in comments:
+        comment.liked_by_user = comment.likes.filter(id=request.user.id).exists()
+        for reply in comment.replies.all():
+            reply.liked_by_user = reply.likes.filter(id=request.user.id).exists()
 
-    return render(request, 'newapp/post_detail.html', {
+    context = {
         'post': post,
         'comments': comments,
-        'comment_form': comment_form
-    })
+        'comment_form': comment_form,
+        'user_liked': user_liked,
+    }
+    return render(request, 'newapp/post_detail.html', context)
 
 @login_required
 def post_edit(request, pk):
@@ -143,6 +163,7 @@ def post_edit(request, pk):
     if not request.user.is_superuser and request.user != post.author:
         messages.error(request, "You don’t have permission to edit this post.")
         return redirect('newapp:post_detail', pk=pk)
+
     if request.method == 'POST':
         form = PostForm(request.POST, instance=post)
         if form.is_valid():
@@ -152,7 +173,6 @@ def post_edit(request, pk):
     else:
         form = PostForm(instance=post)
     return render(request, 'newapp/post_form.html', {'form': form})
-
 
 @login_required
 def post_delete(request, pk):
@@ -165,12 +185,43 @@ def post_delete(request, pk):
     return redirect('newapp:post_list')
 
 @login_required
+def add_like(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    like, created = Like.objects.get_or_create(post=post, user=request.user)
+    if not created:
+        like.delete()
+        messages.info(request, "You unliked this post.")
+    else:
+        messages.success(request, "You liked this post.")
+    return redirect('newapp:post_detail', pk=pk)
+
+@login_required
+def comment_like(request, pk):
+    comment = get_object_or_404(Comment, pk=pk)
+    like, created = Like.objects.get_or_create(comment=comment, user=request.user)
+
+    if not created:
+        like.delete()
+        messages.info(request, "You unliked this comment.")
+    else:
+        messages.success(request, "You liked this comment.")
+
+    return redirect('newapp:post_detail', pk=comment.post.pk)
+
+@login_required
+def liked_users(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    likes = post.likes.select_related("user")
+    return render(request, 'newapp/users_liked.html', {"post": post, "likes": likes})
+
+@login_required
 def delete_comments(request, pk):
     comment = get_object_or_404(Comment, pk=pk)
-    if (request.user == comment.author or request.user == comment.post.author or
-            request.user.is_superuser):
+    if (request.user == comment.author or
+        request.user == comment.post.author or
+        request.user.is_superuser):
         comment.delete()
         messages.success(request, "Comment deleted successfully!")
     else:
-        messages.error(request, "You are not authorized to delete this comment")
+        messages.error(request, "You are not authorized to delete this comment.")
     return redirect('newapp:post_detail', pk=comment.post.pk)

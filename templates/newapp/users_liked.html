@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Users who liked {{ post.title }}</title>
+    <style>
+        body { font-family: "Poppins", sans-serif; background: #f4f4f9; margin: 0; }
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; }
+        ul { list-style: none; padding: 0; }
+        li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            background: #4a90e2;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .btn:hover { background: #357ab7; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>👥 Users who liked "{{ post.title }}"</h2>
+
+    {% if likes %}
+        <ul>
+            {% for like in likes %}
+                <li>{{ like.user.username }} — {{ like.created_at|date:"Y-m-d H:i" }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No likes yet.</p>
+    {% endif %}
+
+    <a href="{% url 'newapp:post_detail' post.pk %}" class="btn">🔙 Back to Post</a>
+</div>
+</body>
+</html>

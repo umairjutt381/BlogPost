@@ -43,7 +43,7 @@
 </head>
 <body>
 <div class="container">
-    <h2>{% if form.instance.pk %}Edit Post{% else %}Create New Post{% endif %}</h2>
+    <h2>{% if form.instance.pk %}Edit Post{% else %}✍️ Create New Post{% endif %}</h2>
 
     <form method="post">
         {% csrf_token %}

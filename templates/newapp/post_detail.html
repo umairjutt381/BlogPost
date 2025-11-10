@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>{{ post.title }}</title>
@@ -10,100 +10,251 @@
             background: #f4f4f9;
             margin: 0;
         }
+
         .container {
             padding: 30px;
-            max-width: 800px;
-            margin: auto;
+            max-width: 850px;
+            margin: 40px auto;
             background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .meta {
+            text-align: center;
+            color: #777;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        a {
+            text-decoration: none;
+            color: #4a90e2;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .post-image {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .post-image img {
+            max-width: 100%;
+            height: auto;
             border-radius: 10px;
-            margin-top: 40px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        h2 { text-align: center; }
-        .meta { color: gray; margin-bottom: 15px; }
+
+        .comments {
+            margin-top: 30px;
+        }
+
+        .comment {
+            background: #f7f7f7;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-top: 15px;
+        }
+
+        .reply {
+            background: #ececec;
+            margin-left: 40px;
+        }
+
+        .comment strong {
+            color: #333;
+        }
+
+        .meta-time {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        textarea {
+            width: 100%;
+            resize: vertical;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-family: inherit;
+        }
+
         .btn {
             background: #4a90e2;
             color: white;
             padding: 8px 15px;
             border-radius: 5px;
             text-decoration: none;
+            border: none;
+            cursor: pointer;
         }
-        .btn:hover { background: #357ab7; }
 
-        .actions a {
-            margin-right: 10px;
-            text-decoration: none;
-            color: #4a90e2;
+        .btn:hover {
+            background: #357ab7;
         }
-        .actions a:hover { text-decoration: underline; }
 
-        .comment-box { margin-top: 30px; }
-        .comment {
-            border-bottom: 1px solid #eee;
-            padding: 10px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .comment-text {
-            flex: 1;
-        }
-        .delete-btn {
-            background: #e74c3c;
+        .like-btn {
+            background: #4a90e2;
             color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 13px;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
         }
-        .delete-btn:hover {
+        .like-btn:hover {
+            background: #357ab7;
+        }
+
+        .unlike-btn {
+            background: #e74c3c;
+        }
+        .unlike-btn:hover {
             background: #c0392b;
         }
+
+        hr {
+            margin: 25px 0;
+            border: 0;
+            border-top: 1px solid #eee;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
     </style>
 </head>
 <body>
 <div class="container">
+
     <h2>{{ post.title }}</h2>
-    <p class="meta">By <strong>{{ post.author.username }}</strong> on {{ post.created_at|date:"Y-m-d H:i" }}</p>
+    <p class="meta">
+        By <strong>{{ post.author.username }}</strong> • 
+        👁 {{ post.views }} views • 
+        🗓 {{ post.created_at|date:"Y-m-d H:i" }}
+    </p>
+
+    {% if post.insert_image %}
+        <div class="post-image">
+            <img src="{{ post.insert_image.url }}" alt="{{ post.title }}">
+        </div>
+    {% endif %}
+
     <p>{{ post.content }}</p>
 
-    <div class="actions">
-        <a href="{% url 'newapp:post_list' %}">⬅️ Back</a>
-        {% if request.user.is_superuser or request.user == post.author %}
-            <a href="{% url 'newapp:post_edit' post.pk %}">Edit</a>
-            <a href="{% url 'newapp:post_delete' post.pk %}">Delete</a>
-        {% endif %}
+    <!-- ❤️ Post Like Section -->
+    {% if user.is_authenticated %}
+        <form method="POST" action="{% url 'newapp:post_like' post.pk %}" style="display:inline;">
+            {% csrf_token %}
+            {% if user_liked %}
+                <button type="submit" class="like-btn unlike-btn">❤️ Unlike</button>
+            {% else %}
+                <button type="submit" class="like-btn">👍 Like</button>
+            {% endif %}
+        </form>
+        <span style="margin-left:10px;">
+            {{ post.likes.count }} Likes
+            {% if post.likes.count > 0 %}
+                (<a href="{% url 'newapp:liked_users' post.pk %}">view users</a>)
+            {% endif %}
+        </span>
+    {% else %}
+        <p><a href="{% url 'newapp:login' %}">Login</a> to like this post ❤️</p>
+    {% endif %}
+
+    <div class="back-link">
+        <a href="{% url 'newapp:post_list' %}">⬅️ Back to Posts</a>
     </div>
 
-    <div class="comment-box">
-        <h3>Comments</h3>
+    <hr>
+
+    <!-- 💬 Comments Section -->
+    <div class="comments">
+        <h3>💬 Comments</h3>
+
+        {% if user.is_authenticated %}
+        <form method="POST" class="comment-box">
+            {% csrf_token %}
+            {{ comment_form.as_p }}
+            <button type="submit" class="btn">Add Comment</button>
+        </form>
+        {% else %}
+            <p><a href="{% url 'newapp:login' %}">Login</a> to comment 💬</p>
+        {% endif %}
+
         {% for comment in comments %}
             <div class="comment">
-                <div class="comment-text">
-                    <strong>{{ comment.author.username }}</strong>: {{ comment.text }}
-                </div>
+                <p><strong>{{ comment.author.username }}</strong>: {{ comment.text }}</p>
+                <p class="meta-time">{{ comment.created_at|date:"Y-m-d H:i" }}</p>
 
-                {% if request.user == comment.author or request.user == comment.post.author or request.user.is_superuser %}
-                    <a href="{% url 'newapp:delete_comments' comment.pk %}"
-                       class="delete-btn"
-                       onclick="return confirm('Are you sure you want to delete this comment?');">
-                        Delete
-                    </a>
+                {% if user.is_authenticated %}
+                    <!-- ❤️ Comment Like Button -->
+                    <form method="POST" action="{% url 'newapp:comment_like' comment.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        {% if comment.liked_by_user %}
+                            <button type="submit" class="like-btn unlike-btn">❤️ Unlike</button>
+                        {% else %}
+                            <button type="submit" class="like-btn">👍 Like</button>
+                        {% endif %}
+                    </form>
+                    <span style="margin-left:8px;">{{ comment.likes.count }} Likes</span>
+
+                    <!-- 🗑 Delete Comment Button -->
+                    {% if user == comment.author or user == post.author or user.is_superuser %}
+                        <form method="POST" action="{% url 'newapp:delete_comments' comment.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="like-btn unlike-btn" style="background:#e74c3c;">🗑 Delete</button>
+                        </form>
+                    {% endif %}
+
+                    <!-- 💬 Reply Box -->
+                    <form method="POST" class="reply-box" style="margin-top:10px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                        <textarea name="text" rows="1" placeholder="Reply..."></textarea><br>
+                        <button type="submit" class="btn">Reply</button>
+                    </form>
                 {% endif %}
+
+                {% for reply in comment.replies.all %}
+                    <div class="comment reply">
+                        <p><strong>{{ reply.author.username }}</strong>: {{ reply.text }}</p>
+                        <p class="meta-time">{{ reply.created_at|date:"Y-m-d H:i" }}</p>
+
+                        {% if user.is_authenticated %}
+                            <!-- ❤️ Reply Like Button -->
+                            <form method="POST" action="{% url 'newapp:comment_like' reply.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                {% if reply.liked_by_user %}
+                                    <button type="submit" class="like-btn unlike-btn">❤️ Unlike</button>
+                                {% else %}
+                                    <button type="submit" class="like-btn">👍 Like</button>
+                                {% endif %}
+                            </form>
+                            <span style="margin-left:8px;">{{ reply.likes.count }} Likes</span>
+
+                            <!-- 🗑 Delete Reply Button -->
+                            {% if user == reply.author or user == post.author or user.is_superuser %}
+                                <form method="POST" action="{% url 'newapp:delete_comments' reply.pk %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="like-btn unlike-btn" style="background:#e74c3c;">🗑 Delete</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
             </div>
         {% empty %}
-            <p>No comments yet.</p>
+            <p>No comments yet. Be the first to comment!</p>
         {% endfor %}
-
-        {% if request.user.is_authenticated %}
-            <form method="post">
-                {% csrf_token %}
-                {{ comment_form.as_p }}
-                <button type="submit" class="btn">Add Comment</button>
-            </form>
-        {% else %}
-            <p><a href="{% url 'newapp:login' %}">Login</a> to add a comment.</p>
-        {% endif %}
     </div>
 </div>
 </body>
